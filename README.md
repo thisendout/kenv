@@ -6,6 +6,8 @@ Environment file preprocessor for Kubernetes deployments
 
 kenv injects variables into Kubernetes resource documents by loading a list of files containing variables, and modifying the resource document to include those values. This way, you can dynamically set environment variables without having to template your resource documents.
 
+![kenv Example](example.gif)
+
 ## Getting Started
 
 [Download](https://github.com/thisendout/kenv/releases/tag/v0.1.0) kenv and run by passing a resource doc (YAML or JSON) to:
