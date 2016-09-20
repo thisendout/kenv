@@ -27,15 +27,7 @@
                 "containerPort": 80
               }
             ],
-            "resources": {},
-            "readinessProbe": {
-              "httpGet": {
-                "path": "/",
-                "port": 80
-              },
-              "initialDelaySeconds": 10,
-              "timeoutSeconds": 1
-            }
+            "resources": {}
           }
         ]
       }

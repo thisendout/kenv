@@ -22,6 +22,14 @@ func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
+	flagSet.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Examples:\n")
+		fmt.Fprintf(os.Stderr, "  kenv -v fixtures/vars.env fixtures/deployment.yaml\n")
+		fmt.Fprintf(os.Stderr, "  cat fixtures/deployment.yaml | kenv -v fixtures/vars.env\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flagSet.PrintDefaults()
+	}
 }
 
 func main() {

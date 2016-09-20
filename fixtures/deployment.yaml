@@ -16,9 +16,3 @@ spec:
           image: nginx:latest
           ports:
             - containerPort: 80
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 10
-            timeoutSeconds: 1
