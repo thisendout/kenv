@@ -1,0 +1,46 @@
+{
+  "kind": "Deployment",
+  "apiVersion": "extensions/v1beta1",
+  "metadata": {
+    "name": "nginx",
+    "creationTimestamp": null,
+    "labels": {
+      "app": "nginx"
+    }
+  },
+  "spec": {
+    "replicas": 3,
+    "template": {
+      "metadata": {
+        "creationTimestamp": null,
+        "labels": {
+          "app": "nginx"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "nginx",
+            "image": "nginx:latest",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ],
+            "resources": {},
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": 80
+              },
+              "initialDelaySeconds": 10,
+              "timeoutSeconds": 1
+            }
+          }
+        ]
+      }
+    },
+    "strategy": {}
+  },
+  "status": {}
+}

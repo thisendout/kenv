@@ -1,0 +1,26 @@
+language: go
+go:
+- 1.7
+cache:
+  directories:
+  - vendor
+install:
+- go get -u github.com/kardianos/govendor
+- govendor sync
+script:
+- govendor vet +local
+- govendor test +local
+before_deploy:
+- GOOS=linux GOARCH=amd64 govendor build -o kenv_linux_amd64
+- GOOS=darwin GOARCH=amd64 govendor build -o kenv_darwin_amd64
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: iaBN7XLYLyczNAC1gyby346iCOsNStj6l7Xu0dBrDdSIy82eYkEnxMe0AKJuWD6GyrP8ZWvbiEUnyPCyGLmKaQdEnKJtBb/5kp1AY8/SA9ZF5jEbwwYRPuUXBWM0jvi5Fc7SkHAUSKAXy9S5XTU3+Ag8iTSMDeL5Mm8BpBeA2/WVrHJDw4CcwoCxpODVOFFDKSePjiIWy0AE2zRpC4OONO9CYFKWtrhRpottON2u6QLVZhcvj5x3cRC2ukPN8rXJwCxUGrm1oyIRrZ/6LKBk1yRyA01YfkJqguyV1vLuyTg9/uhG/cfAzPlHPhW5B64+k4QgBgVSfY39eNIe5bGG59O9fQkYQNos1sFc46RrWBRkc8Xc+44uqAacEc+ebkjTL0HbGNnkYGerYLO94QOcnSbzqgB/tt8S5GD2+jeea1TMfxXEEv0aSjzVLmi0B12rd4RabEiOOh5QTzstU6Zglbs6XN07kgjMsU8/IT/bVlcRdEtBhvUl0eMRRHIxey0ipAypgxeL+8i0ab+wM3GincC/08d4W4XfXysHyFYKAs2nX8LBi3QTCVgmVEKE6VNjgAguRrT++9/moS33tU8KxvHnlAiEXSOS0DMGy82PgvlTngWUTenJiXzfbfZfB5XPAHygV8Dd/2q3rupPHzBwp+k/eMhzUrT813wvfqoWA94=
+  file:
+  - kenv_linux_amd64
+  - kenv_darwin_amd64
+  on:
+    tags: true
+    repo: thisendout/kenv
