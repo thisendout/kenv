@@ -27,7 +27,7 @@ func updateContainersDeployment(deployment *v1beta1.Deployment, envVars []v1.Env
 	containers := []v1.Container{}
 
 	for _, c := range podSpec.Containers {
-		c.Env = envVars
+		c.Env = append(c.Env, envVars...)
 		containers = append(containers, c)
 	}
 
