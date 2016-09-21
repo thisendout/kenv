@@ -27,7 +27,7 @@ func updateContainersReplicaSet(replicaSet *v1beta1.ReplicaSet, envVars []v1.Env
 	containers := []v1.Container{}
 
 	for _, c := range podSpec.Containers {
-		c.Env = envVars
+		c.Env = mergeEnvVars(c.Env, envVars)
 		containers = append(containers, c)
 	}
 
