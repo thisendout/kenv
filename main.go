@@ -97,6 +97,8 @@ func main() {
 		doc, err = InjectVarsDeployment(data, envVars)
 	case "ReplicationController":
 		doc, err = InjectVarsReplicationController(data, envVars)
+	case "DaemonSet":
+		doc, err = InjectVarsDaemonSet(data, envVars)
 	default:
 		err = fmt.Errorf("Kind %s not supported\n", kind)
 	}
