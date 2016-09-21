@@ -12,10 +12,11 @@ kenv injects variables into Kubernetes resource documents by loading a list of f
 
 [Download](https://github.com/thisendout/kenv/releases/tag/v0.1.0) kenv and run by passing a resource doc (YAML or JSON) to:
 
-STDIN with a pipe:
+STDIN:
 
 ```
 cat fixtures/deployment.yaml | ./kenv -v fixtures/vars.env
+./kenv -v fixtures/vars.env < fixtures/deployment.yaml
 ```
 
 or as a CLI Arg:

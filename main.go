@@ -43,6 +43,15 @@ func main() {
 
 	switch name := flagSet.Arg(0); {
 	case name == "":
+		fi, err := os.Stdin.Stat()
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Print usage unless we already have STDIN data or incoming pipe
+		if fi.Size() == 0 && fi.Mode()&os.ModeNamedPipe == 0 {
+			flagSet.Usage()
+			return
+		}
 		in = os.Stdin
 	default:
 		if in, err = os.Open(name); err != nil {
