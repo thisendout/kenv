@@ -99,6 +99,8 @@ func main() {
 		doc, err = InjectVarsReplicationController(data, envVars)
 	case "DaemonSet":
 		doc, err = InjectVarsDaemonSet(data, envVars)
+	case "ReplicaSet":
+		doc, err = InjectVarsReplicaSet(data, envVars)
 	default:
 		err = fmt.Errorf("Kind %s not supported\n", kind)
 	}
