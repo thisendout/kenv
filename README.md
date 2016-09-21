@@ -63,5 +63,4 @@ go test -v .
 * Support [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/)
 * Support [Secrets](http://kubernetes.io/docs/user-guide/secrets/walkthrough/)
 * Support [DaemonSets](http://kubernetes.io/docs/admin/daemons/)
-* Support [ReplicationControllers](http://kubernetes.io/docs/user-guide/replication-controller/)
 * Support [ReplicaSets](http://kubernetes.io/docs/user-guide/replicasets/)
