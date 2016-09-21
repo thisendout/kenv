@@ -27,7 +27,7 @@ func updateContainersDaemonSet(daemonSet *v1beta1.DaemonSet, envVars []v1.EnvVar
 	containers := []v1.Container{}
 
 	for _, c := range podSpec.Containers {
-		c.Env = append(c.Env, envVars...)
+		c.Env = mergeEnvVars(c.Env, envVars...)
 		containers = append(containers, c)
 	}
 

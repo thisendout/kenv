@@ -26,7 +26,7 @@ func updateContainersReplicationController(replicationController *v1.Replication
 	containers := []v1.Container{}
 
 	for _, c := range podSpec.Containers {
-		c.Env = append(c.Env, envVars...)
+		c.Env = mergeEnvVars(c.Env, envVars...)
 		containers = append(containers, c)
 	}
 
