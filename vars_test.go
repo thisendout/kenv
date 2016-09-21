@@ -148,6 +148,9 @@ func TestToConfigMap(t *testing.T) {
 			Name: "KEY1",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "foo",
+					},
 					Key: "KEY1",
 				},
 			},
@@ -156,6 +159,9 @@ func TestToConfigMap(t *testing.T) {
 			Name: "key2",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "foo",
+					},
 					Key: "key2",
 				},
 			},

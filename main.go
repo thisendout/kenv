@@ -10,17 +10,24 @@ import (
 	"strings"
 
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
 var (
-	varsFiles FlagSlice
-	flagSet   *flag.FlagSet
+	varsFiles       FlagSlice
+	useConfigMap    bool
+	configName      string
+	configNamespace string
+	flagSet         *flag.FlagSet
 )
 
 func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
+	flagSet.BoolVar(&useConfigMap, "m", false, "Generated and use a ConfigMap to set environment variables")
+	flagSet.StringVar(&configName, "name", "", "Name to give the ConfigMap")
+	flagSet.StringVar(&configNamespace, "namespace", "default", "Namespace to create the ConfigMap in")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
@@ -35,6 +42,10 @@ func init() {
 func main() {
 	if err := flagSet.Parse(os.Args[1:]); err != nil {
 		log.Fatal(err)
+	}
+
+	if useConfigMap && configName == "" {
+		log.Fatalf("Must specify name for ConfigMap")
 	}
 
 	// take either a doc as a cli arg or stdin
@@ -84,7 +95,15 @@ func main() {
 		vars = append(vars, v...)
 	}
 
-	envVars := vars.toEnvVar()
+	var envVars []v1.EnvVar
+	var configMap v1.ConfigMap
+
+	if useConfigMap {
+		envVars, configMap = vars.toConfigMap(configName, configNamespace)
+	} else {
+		envVars = vars.toEnvVar()
+	}
+
 	var doc string
 
 	kind, err := getDocKind(data)
@@ -107,6 +126,14 @@ func main() {
 
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if useConfigMap {
+		configMapData, err := json.MarshalIndent(&configMap, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(configMapData))
 	}
 
 	fmt.Println(doc)

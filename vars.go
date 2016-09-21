@@ -128,6 +128,9 @@ func (vars Vars) toConfigMap(name string, namespace string) ([]v1.EnvVar, v1.Con
 			Name: v.Key,
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: name,
+					},
 					Key: v.Key,
 				},
 			},
