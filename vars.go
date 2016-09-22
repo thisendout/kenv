@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/util/validation"
 )
 
 // Var represents a basic key/value variable
@@ -87,15 +88,6 @@ func ReadYAMLFile(filename string) (Vars, error) {
 	return vars, nil
 }
 
-func (vars Vars) toStringMap() map[string]string {
-	m := make(map[string]string)
-	for _, v := range vars {
-		m[v.Key] = v.Value
-	}
-
-	return m
-}
-
 func (vars Vars) toEnvVar() []v1.EnvVar {
 	envVars := []v1.EnvVar{}
 	for _, v := range vars {
@@ -108,10 +100,44 @@ func (vars Vars) toEnvVar() []v1.EnvVar {
 	return envVars
 }
 
-func (vars Vars) toConfigMap(name string, namespace string) ([]v1.EnvVar, v1.ConfigMap) {
+func (vars Vars) toConfigMap(name string, namespace string, convert bool) ([]v1.EnvVar, *v1.ConfigMap, error) {
 	envVars := []v1.EnvVar{}
+	data := make(map[string]string)
 
-	configMap := v1.ConfigMap{
+	for _, v := range vars {
+		key := v.Key
+
+		if convertKeys {
+			key = strings.ToLower(strings.Replace(key, "_", "-", -1))
+			errs := validation.IsDNS1123Subdomain(key)
+			if len(errs) > 0 {
+				err := fmt.Errorf("%s is not a valid ConfigMap key: %s", v.Key, strings.Join(errs, ", "))
+				return envVars, &v1.ConfigMap{}, err
+			}
+		} else {
+			errs := validation.IsConfigMapKey(v.Key)
+			if len(errs) > 0 {
+				err := fmt.Errorf("%s is not a valid ConfigMap key: %s", v.Key, strings.Join(errs, ", "))
+				return envVars, &v1.ConfigMap{}, err
+			}
+		}
+
+		data[key] = v.Value
+
+		envVars = append(envVars, v1.EnvVar{
+			Name: v.Key,
+			ValueFrom: &v1.EnvVarSource{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: name,
+					},
+					Key: key,
+				},
+			},
+		})
+	}
+
+	configMap := &v1.ConfigMap{
 		TypeMeta: unversioned.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
@@ -120,22 +146,8 @@ func (vars Vars) toConfigMap(name string, namespace string) ([]v1.EnvVar, v1.Con
 			Name:      name,
 			Namespace: namespace,
 		},
-		Data: vars.toStringMap(),
+		Data: data,
 	}
 
-	for _, v := range vars {
-		envVars = append(envVars, v1.EnvVar{
-			Name: v.Key,
-			ValueFrom: &v1.EnvVarSource{
-				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: name,
-					},
-					Key: v.Key,
-				},
-			},
-		})
-	}
-
-	return envVars, configMap
+	return envVars, configMap, nil
 }

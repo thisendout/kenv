@@ -8,29 +8,17 @@ import (
 )
 
 // InjectVarsReplicaSet inserts EnvVars into a replicaSet doc
-func InjectVarsReplicaSet(data []byte, envVars []v1.EnvVar) (string, error) {
-	replicaSet := v1beta1.ReplicaSet{}
-
-	if err := json.Unmarshal(data, &replicaSet); err != nil {
-		return "", err
+func InjectVarsReplicaSet(data []byte, envVars []v1.EnvVar) (*v1beta1.ReplicaSet, error) {
+	replicaSet := &v1beta1.ReplicaSet{}
+	if err := json.Unmarshal(data, replicaSet); err != nil {
+		return replicaSet, err
 	}
 
-	updateContainersReplicaSet(&replicaSet, envVars)
+	podSpec := injectPodSpecEnvVars(
+		replicaSet.Spec.Template.Spec,
+		envVars,
+	)
 
-	data, err := json.MarshalIndent(&replicaSet, "", "  ")
-
-	return string(data), err
-}
-
-func updateContainersReplicaSet(replicaSet *v1beta1.ReplicaSet, envVars []v1.EnvVar) {
-	podSpec := replicaSet.Spec.Template.Spec
-	containers := []v1.Container{}
-
-	for _, c := range podSpec.Containers {
-		c.Env = mergeEnvVars(c.Env, envVars)
-		containers = append(containers, c)
-	}
-
-	podSpec.Containers = containers
 	replicaSet.Spec.Template.Spec = podSpec
+	return replicaSet, nil
 }

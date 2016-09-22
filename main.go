@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
@@ -19,6 +19,7 @@ var (
 	useConfigMap    bool
 	configName      string
 	configNamespace string
+	convertKeys     bool
 	flagSet         *flag.FlagSet
 )
 
@@ -28,6 +29,7 @@ func init() {
 	flagSet.BoolVar(&useConfigMap, "m", false, "Generated and use a ConfigMap to set environment variables")
 	flagSet.StringVar(&configName, "name", "", "Name to give the ConfigMap")
 	flagSet.StringVar(&configNamespace, "namespace", "default", "Namespace to create the ConfigMap in")
+	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
@@ -96,20 +98,23 @@ func main() {
 	}
 
 	var envVars []v1.EnvVar
-	var configMap v1.ConfigMap
+	var configMap *v1.ConfigMap
 
 	if useConfigMap {
-		envVars, configMap = vars.toConfigMap(configName, configNamespace)
+		envVars, configMap, err = vars.toConfigMap(configName, configNamespace, convertKeys)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
 		envVars = vars.toEnvVar()
 	}
-
-	var doc string
 
 	kind, err := getDocKind(data)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var doc runtime.Object
 
 	switch kind {
 	case "Deployment":
@@ -128,15 +133,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var result interface{}
+
 	if useConfigMap {
-		configMapData, err := json.MarshalIndent(&configMap, "", "  ")
+		result = newList(doc, configMap)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(string(configMapData))
+	} else {
+		result = doc
 	}
 
-	fmt.Println(doc)
+	resultData, err := json.MarshalIndent(&result, "", "  ")
+	fmt.Println(string(resultData))
 }
 
 // FlagSlice represents a repeatable string flag
@@ -151,12 +160,4 @@ func (f *FlagSlice) String() string {
 func (f *FlagSlice) Set(value string) error {
 	*f = append(*f, value)
 	return nil
-}
-
-func getDocKind(data []byte) (string, error) {
-	typeMeta := unversioned.TypeMeta{}
-	if err := json.Unmarshal(data, &typeMeta); err != nil {
-		return "", err
-	}
-	return typeMeta.Kind, nil
 }
