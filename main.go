@@ -109,7 +109,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	println(doc)
+	fmt.Println(doc)
 }
 
 // FlagSlice represents a repeatable string flag
