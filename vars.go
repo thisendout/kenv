@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	//"gopkg.in/yaml.v2"
 	"github.com/ghodss/yaml"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
