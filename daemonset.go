@@ -8,29 +8,17 @@ import (
 )
 
 // InjectVarsDaemonSet inserts EnvVars into a daemonSet doc
-func InjectVarsDaemonSet(data []byte, envVars []v1.EnvVar) (string, error) {
-	daemonSet := v1beta1.DaemonSet{}
+func InjectVarsDaemonSet(data []byte, envVars []v1.EnvVar) (*v1beta1.DaemonSet, error) {
+	daemonSet := &v1beta1.DaemonSet{}
 
-	if err := json.Unmarshal(data, &daemonSet); err != nil {
-		return "", err
+	if err := json.Unmarshal(data, daemonSet); err != nil {
+		return daemonSet, err
 	}
 
-	updateContainersDaemonSet(&daemonSet, envVars)
-
-	data, err := json.MarshalIndent(&daemonSet, "", "  ")
-
-	return string(data), err
-}
-
-func updateContainersDaemonSet(daemonSet *v1beta1.DaemonSet, envVars []v1.EnvVar) {
-	podSpec := daemonSet.Spec.Template.Spec
-	containers := []v1.Container{}
-
-	for _, c := range podSpec.Containers {
-		c.Env = mergeEnvVars(c.Env, envVars)
-		containers = append(containers, c)
-	}
-
-	podSpec.Containers = containers
+	podSpec := injectPodSpecEnvVars(
+		daemonSet.Spec.Template.Spec,
+		envVars,
+	)
 	daemonSet.Spec.Template.Spec = podSpec
+	return daemonSet, nil
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -9,37 +8,47 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
 var (
-	varsFiles FlagSlice
-	flagSet   *flag.FlagSet
+	varsFiles     FlagSlice
+	configMapName string
+	namespace     string
+	convertKeys   bool
+	flagSet       *flag.FlagSet
 )
 
 func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
+	flagSet.StringVar(&configMapName, "config-map", "", "Name to give the ConfigMap")
+	flagSet.StringVar(&namespace, "namespace", "default", "Namespace to create the ConfigMap in")
+	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Examples:\n")
-		fmt.Fprintf(os.Stderr, "  kenv -v fixtures/vars.env fixtures/deployment.yaml\n")
-		fmt.Fprintf(os.Stderr, "  cat fixtures/deployment.yaml | kenv -v fixtures/vars.env\n\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(os.Stderr, `
+Examples:
+
+  kenv -v fixtures/vars.env fixtures/deployment.yaml
+  cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
+
+Options:
+`)
 		flagSet.PrintDefaults()
 	}
 }
 
 func main() {
-	if err := flagSet.Parse(os.Args[1:]); err != nil {
-		log.Fatal(err)
-	}
-
-	// take either a doc as a cli arg or stdin
 	var in *os.File
 	var err error
+
+	if err = flagSet.Parse(os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
 
 	switch name := flagSet.Arg(0); {
 	case name == "":
@@ -84,13 +93,27 @@ func main() {
 		vars = append(vars, v...)
 	}
 
-	envVars := vars.toEnvVar()
-	var doc string
+	var envVars []v1.EnvVar
+	var configMap *v1.ConfigMap
+
+	if configMapName != "" {
+		envVars, configMap, err = vars.toConfigMap(configMapName, namespace, convertKeys)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = printJSON(configMap); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		envVars = vars.toEnvVar()
+	}
 
 	kind, err := getDocKind(data)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var doc runtime.Object
 
 	switch kind {
 	case "Deployment":
@@ -109,7 +132,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(doc)
+	if err = printJSON(doc); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // FlagSlice represents a repeatable string flag
@@ -124,12 +149,4 @@ func (f *FlagSlice) String() string {
 func (f *FlagSlice) Set(value string) error {
 	*f = append(*f, value)
 	return nil
-}
-
-func getDocKind(data []byte) (string, error) {
-	typeMeta := unversioned.TypeMeta{}
-	if err := json.Unmarshal(data, &typeMeta); err != nil {
-		return "", err
-	}
-	return typeMeta.Kind, nil
 }

@@ -8,29 +8,17 @@ import (
 )
 
 // InjectVarsDeployment inserts EnvVars into a deployment doc
-func InjectVarsDeployment(data []byte, envVars []v1.EnvVar) (string, error) {
-	deployment := v1beta1.Deployment{}
-
-	if err := json.Unmarshal(data, &deployment); err != nil {
-		return "", err
+func InjectVarsDeployment(data []byte, envVars []v1.EnvVar) (*v1beta1.Deployment, error) {
+	deployment := &v1beta1.Deployment{}
+	if err := json.Unmarshal(data, deployment); err != nil {
+		return deployment, err
 	}
 
-	updateContainersDeployment(&deployment, envVars)
+	podSpec := injectPodSpecEnvVars(
+		deployment.Spec.Template.Spec,
+		envVars,
+	)
 
-	data, err := json.MarshalIndent(&deployment, "", "  ")
-
-	return string(data), err
-}
-
-func updateContainersDeployment(deployment *v1beta1.Deployment, envVars []v1.EnvVar) {
-	podSpec := deployment.Spec.Template.Spec
-	containers := []v1.Container{}
-
-	for _, c := range podSpec.Containers {
-		c.Env = mergeEnvVars(c.Env, envVars)
-		containers = append(containers, c)
-	}
-
-	podSpec.Containers = containers
 	deployment.Spec.Template.Spec = podSpec
+	return deployment, nil
 }

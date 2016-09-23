@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -61,5 +62,21 @@ func TestIsDuplicateEnvVar(t *testing.T) {
 
 	if !d {
 		t.Fatalf("should be duplicate")
+	}
+}
+
+func TestGetDocKind(t *testing.T) {
+	data, err := ioutil.ReadFile("fixtures/deployment.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kind, err := getDocKind(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if kind != "Deployment" {
+		t.Fatalf("kind not equal")
 	}
 }

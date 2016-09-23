@@ -7,29 +7,17 @@ import (
 )
 
 // InjectVarsReplicationController inserts EnvVars into a replicationController doc
-func InjectVarsReplicationController(data []byte, envVars []v1.EnvVar) (string, error) {
-	replicationController := v1.ReplicationController{}
-
-	if err := json.Unmarshal(data, &replicationController); err != nil {
-		return "", err
+func InjectVarsReplicationController(data []byte, envVars []v1.EnvVar) (*v1.ReplicationController, error) {
+	replicationController := &v1.ReplicationController{}
+	if err := json.Unmarshal(data, replicationController); err != nil {
+		return replicationController, err
 	}
 
-	updateContainersReplicationController(&replicationController, envVars)
+	podSpec := injectPodSpecEnvVars(
+		replicationController.Spec.Template.Spec,
+		envVars,
+	)
 
-	data, err := json.MarshalIndent(&replicationController, "", "  ")
-
-	return string(data), err
-}
-
-func updateContainersReplicationController(replicationController *v1.ReplicationController, envVars []v1.EnvVar) {
-	podSpec := replicationController.Spec.Template.Spec
-	containers := []v1.Container{}
-
-	for _, c := range podSpec.Containers {
-		c.Env = mergeEnvVars(c.Env, envVars)
-		containers = append(containers, c)
-	}
-
-	podSpec.Containers = containers
 	replicationController.Spec.Template.Spec = podSpec
+	return replicationController, nil
 }

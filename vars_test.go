@@ -88,30 +88,6 @@ func TestReadYAMLFile(t *testing.T) {
 	}
 }
 
-func TestToStringMap(t *testing.T) {
-	want := map[string]string{
-		"KEY1": "VALUE1",
-		"key2": "value2",
-	}
-
-	v := Vars{
-		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
-		},
-		Var{
-			Key:   "key2",
-			Value: "value2",
-		},
-	}
-
-	vars := v.toStringMap()
-
-	if !reflect.DeepEqual(want, vars) {
-		t.Fatalf("not equal, wanted: %+v, got: %+v", want, vars)
-	}
-}
-
 func TestToEnvVar(t *testing.T) {
 	want := []v1.EnvVar{
 		v1.EnvVar{
@@ -148,6 +124,9 @@ func TestToConfigMap(t *testing.T) {
 			Name: "KEY1",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "foo",
+					},
 					Key: "KEY1",
 				},
 			},
@@ -156,13 +135,16 @@ func TestToConfigMap(t *testing.T) {
 			Name: "key2",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "foo",
+					},
 					Key: "key2",
 				},
 			},
 		},
 	}
 
-	wantConfigMap := v1.ConfigMap{
+	wantConfigMap := &v1.ConfigMap{
 		TypeMeta: unversioned.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
@@ -188,7 +170,10 @@ func TestToConfigMap(t *testing.T) {
 		},
 	}
 
-	envVars, configMap := v.toConfigMap("foo", "bar")
+	envVars, configMap, err := v.toConfigMap("foo", "bar", false)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if !reflect.DeepEqual(wantEnvVars, envVars) {
 		t.Fatalf("EnvVars not equal, wanted: %+v, got: %+v", wantEnvVars, envVars)
