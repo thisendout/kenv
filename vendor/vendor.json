@@ -88,12 +88,6 @@
 			"revision": "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
 		},
 		{
-			"checksumSHA1": "Hs7pfHDSvTNtnRogAAziW2Lki3M=",
-			"path": "gopkg.in/yaml.v2",
-			"revision": "53feefa2559fb8dfa8d81baad31be332c97d6c77",
-			"revisionTime": "2015-09-24T14:23:14Z"
-		},
-		{
 			"checksumSHA1": "dbxN+CkVL0cUKcoa4kLc6jj5FX0=",
 			"comment": "v1.4.0-alpha.3-250-g1b05640",
 			"path": "k8s.io/kubernetes/pkg/api",
