@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/runtime"
 )
 
 // creates a flattened EnvVar slice giving preference to user supplied vars
@@ -41,24 +41,6 @@ func injectPodSpecEnvVars(podSpec v1.PodSpec, envVars []v1.EnvVar) v1.PodSpec {
 	return podSpec
 }
 
-// newList creates a new list of resources to create
-func newList(objects ...runtime.Object) v1.List {
-	rawExtensions := []runtime.RawExtension{}
-	for _, o := range objects {
-		rawExtensions = append(rawExtensions, runtime.RawExtension{
-			Object: o,
-		})
-	}
-
-	return v1.List{
-		TypeMeta: unversioned.TypeMeta{
-			Kind:       "List",
-			APIVersion: "v1",
-		},
-		Items: rawExtensions,
-	}
-}
-
 // getDocKind unmarshalls a file and returns the kind of resource doc
 func getDocKind(data []byte) (string, error) {
 	typeMeta := unversioned.TypeMeta{}
@@ -66,4 +48,15 @@ func getDocKind(data []byte) (string, error) {
 		return "", err
 	}
 	return typeMeta.Kind, nil
+}
+
+// printJSON marshalls an interface and prints to STDOUT
+func printJSON(i interface{}) error {
+	result, err := json.MarshalIndent(&i, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(result))
+	return nil
 }

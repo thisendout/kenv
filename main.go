@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -15,44 +14,41 @@ import (
 )
 
 var (
-	varsFiles       FlagSlice
-	useConfigMap    bool
-	configName      string
-	configNamespace string
-	convertKeys     bool
-	flagSet         *flag.FlagSet
+	varsFiles     FlagSlice
+	configMapName string
+	namespace     string
+	convertKeys   bool
+	flagSet       *flag.FlagSet
 )
 
 func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
-	flagSet.BoolVar(&useConfigMap, "m", false, "Generated and use a ConfigMap to set environment variables")
-	flagSet.StringVar(&configName, "name", "", "Name to give the ConfigMap")
-	flagSet.StringVar(&configNamespace, "namespace", "default", "Namespace to create the ConfigMap in")
+	flagSet.StringVar(&configMapName, "config-map", "", "Name to give the ConfigMap")
+	flagSet.StringVar(&namespace, "namespace", "default", "Namespace to create the ConfigMap in")
 	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Examples:\n")
-		fmt.Fprintf(os.Stderr, "  kenv -v fixtures/vars.env fixtures/deployment.yaml\n")
-		fmt.Fprintf(os.Stderr, "  cat fixtures/deployment.yaml | kenv -v fixtures/vars.env\n\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(os.Stderr, `
+Examples:
+
+  kenv -v fixtures/vars.env fixtures/deployment.yaml
+  cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
+
+Options:
+`)
 		flagSet.PrintDefaults()
 	}
 }
 
 func main() {
-	if err := flagSet.Parse(os.Args[1:]); err != nil {
-		log.Fatal(err)
-	}
-
-	if useConfigMap && configName == "" {
-		log.Fatalf("Must specify name for ConfigMap")
-	}
-
-	// take either a doc as a cli arg or stdin
 	var in *os.File
 	var err error
+
+	if err = flagSet.Parse(os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
 
 	switch name := flagSet.Arg(0); {
 	case name == "":
@@ -100,9 +96,12 @@ func main() {
 	var envVars []v1.EnvVar
 	var configMap *v1.ConfigMap
 
-	if useConfigMap {
-		envVars, configMap, err = vars.toConfigMap(configName, configNamespace, convertKeys)
+	if configMapName != "" {
+		envVars, configMap, err = vars.toConfigMap(configMapName, namespace, convertKeys)
 		if err != nil {
+			log.Fatal(err)
+		}
+		if err = printJSON(configMap); err != nil {
 			log.Fatal(err)
 		}
 	} else {
@@ -133,19 +132,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var result interface{}
-
-	if useConfigMap {
-		result = newList(doc, configMap)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		result = doc
+	if err = printJSON(doc); err != nil {
+		log.Fatal(err)
 	}
-
-	resultData, err := json.MarshalIndent(&result, "", "  ")
-	fmt.Println(string(resultData))
 }
 
 // FlagSlice represents a repeatable string flag
