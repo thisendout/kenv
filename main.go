@@ -14,6 +14,8 @@ import (
 
 var (
 	varsFiles     FlagSlice
+	secretFiles   FlagSlice
+	secretName    string
 	configMapName string
 	namespace     string
 	convertKeys   bool
@@ -24,9 +26,11 @@ func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
 	flagSet.StringVar(&configMapName, "config-map", "", "Name to give the ConfigMap")
+	flagSet.StringVar(&secretName, "secret-name", "", "Name to give the Secret resource")
 	flagSet.StringVar(&namespace, "namespace", "default", "Namespace to create the ConfigMap in")
 	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
+	flagSet.Var(&secretFiles, "s", "File containing secret environment variables (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, `
@@ -85,19 +89,44 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var envVars []v1.EnvVar
-	var configMap *v1.ConfigMap
+	envVars := []v1.EnvVar{}
 
-	if configMapName != "" {
-		envVars, configMap, err = vars.toConfigMap(configMapName, namespace, convertKeys)
+	if len(secretFiles) > 0 {
+		if secretName == "" {
+			log.Fatal("A secret name must be specified when providing secret vars")
+		}
+
+		secretVars, err := newVarsFromFiles(secretFiles)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		e, secret, err := secretVars.toSecret(secretName, namespace, convertKeys)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err = printJSON(secret); err != nil {
+			log.Fatal(err)
+		}
+
+		envVars = append(envVars, e...)
+	}
+
+	if configMapName != "" {
+		e, configMap, err := vars.toConfigMap(configMapName, namespace, convertKeys)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		if err = printJSON(configMap); err != nil {
 			log.Fatal(err)
 		}
+
+		envVars = append(envVars, e...)
 	} else {
-		envVars = vars.toEnvVar()
+		e := vars.toEnvVar()
+		envVars = append(envVars, e...)
 	}
 
 	// inject environment variables into the supplied resource doc
