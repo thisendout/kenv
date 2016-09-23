@@ -13,32 +13,33 @@ import (
 )
 
 var (
-	varsFiles     FlagSlice
-	secretFiles   FlagSlice
-	secretName    string
-	configMapName string
-	namespace     string
-	convertKeys   bool
-	toYAML        bool
-	flagSet       *flag.FlagSet
+	varsFiles      FlagSlice
+	secretFiles    FlagSlice
+	configMapFiles FlagSlice
+	name           string
+	namespace      string
+	convertKeys    bool
+	toYAML         bool
+	flagSet        *flag.FlagSet
 )
 
 func init() {
 	// workaround to avoid inheriting vendor flags
 	flagSet = flag.NewFlagSet("kenv", flag.ExitOnError)
-	flagSet.StringVar(&configMapName, "config-map", "", "Name to give the ConfigMap")
-	flagSet.StringVar(&secretName, "secret-name", "", "Name to give the Secret resource")
+	flagSet.StringVar(&name, "name", "", "Name to give the ConfigMap and Secret resources")
 	flagSet.StringVar(&namespace, "namespace", "default", "Namespace to create the ConfigMap in")
 	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
 	flagSet.BoolVar(&toYAML, "yaml", false, "Output as YAML")
-	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
-	flagSet.Var(&secretFiles, "s", "File containing secret environment variables (repeatable)")
+	flagSet.Var(&varsFiles, "v", "Files containing variables to inject as environment variables (repeatable)")
+	flagSet.Var(&secretFiles, "s", "Files containing variables to inject as Secrets (repeatable)")
+	flagSet.Var(&configMapFiles, "c", "Files containing variables to inject as ConfigMaps (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, `
 Examples:
 
   kenv -v fixtures/vars.env fixtures/deployment.yaml
+	kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
   cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
 
 Options:
@@ -86,24 +87,33 @@ func main() {
 		log.Fatal(err)
 	}
 
-	vars, err := newVarsFromFiles(varsFiles)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	envVars := []v1.EnvVar{}
 
-	if len(secretFiles) > 0 {
-		if secretName == "" {
-			log.Fatal("A secret name must be specified when providing secret vars")
-		}
-
-		secretVars, err := newVarsFromFiles(secretFiles)
+	if len(varsFiles) > 0 {
+		v, err := newVarsFromFiles(varsFiles)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		e, secret, err := secretVars.toSecret(secretName, namespace, convertKeys)
+		e := v.toEnvVar()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		envVars = append(envVars, e...)
+	}
+
+	if len(secretFiles) > 0 {
+		if name == "" {
+			log.Fatal("A name must be set for the Secret resource")
+		}
+
+		v, err := newVarsFromFiles(secretFiles)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		e, secret, err := v.toSecret(name, namespace, convertKeys)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -115,8 +125,17 @@ func main() {
 		envVars = append(envVars, e...)
 	}
 
-	if configMapName != "" {
-		e, configMap, err := vars.toConfigMap(configMapName, namespace, convertKeys)
+	if len(configMapFiles) > 0 {
+		if name == "" {
+			log.Fatal("A name must be set for the ConfigMap resource")
+		}
+
+		v, err := newVarsFromFiles(configMapFiles)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		e, configMap, err := v.toConfigMap(name, namespace, convertKeys)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -125,9 +144,6 @@ func main() {
 			log.Fatal(err)
 		}
 
-		envVars = append(envVars, e...)
-	} else {
-		e := vars.toEnvVar()
 		envVars = append(envVars, e...)
 	}
 
