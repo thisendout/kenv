@@ -129,7 +129,7 @@ func (vars Vars) toConfigMap(name string, namespace string, convert bool) ([]v1.
 	data := make(map[string]string)
 
 	for _, v := range vars {
-		key, err := validateKey(v.Key, convertKeys)
+		key, err := validateKey(v.Key, convert)
 		if err != nil {
 			return envVars, &v1.ConfigMap{}, err
 		}
@@ -169,7 +169,7 @@ func (vars Vars) toSecret(name string, namespace string, convert bool) ([]v1.Env
 	data := make(map[string][]byte)
 
 	for _, v := range vars {
-		key, err := validateKey(v.Key, convertKeys)
+		key, err := validateKey(v.Key, convert)
 		if err != nil {
 			return envVars, &v1.Secret{}, err
 		}
