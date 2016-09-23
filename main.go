@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
@@ -108,31 +107,10 @@ func main() {
 		envVars = vars.toEnvVar()
 	}
 
-	kind, err := getDocKind(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var doc runtime.Object
-
-	switch kind {
-	case "Deployment":
-		doc, err = InjectVarsDeployment(data, envVars)
-	case "ReplicationController":
-		doc, err = InjectVarsReplicationController(data, envVars)
-	case "DaemonSet":
-		doc, err = InjectVarsDaemonSet(data, envVars)
-	case "ReplicaSet":
-		doc, err = InjectVarsReplicaSet(data, envVars)
-	default:
-		err = fmt.Errorf("Kind %s not supported\n", kind)
-	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err = printJSON(doc); err != nil {
+	// inject environment variables into the supplied resource doc
+	// and print the result to STDOUT
+	object, err := InjectVars(data, envVars)
+	if err = printJSON(object); err != nil {
 		log.Fatal(err)
 	}
 }
