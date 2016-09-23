@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -128,21 +129,9 @@ func (vars Vars) toConfigMap(name string, namespace string, convert bool) ([]v1.
 	data := make(map[string]string)
 
 	for _, v := range vars {
-		key := v.Key
-
-		if convertKeys {
-			key = strings.ToLower(strings.Replace(key, "_", "-", -1))
-			errs := validation.IsDNS1123Subdomain(key)
-			if len(errs) > 0 {
-				err := fmt.Errorf("%s is not a valid ConfigMap key: %s", v.Key, strings.Join(errs, ", "))
-				return envVars, &v1.ConfigMap{}, err
-			}
-		} else {
-			errs := validation.IsConfigMapKey(v.Key)
-			if len(errs) > 0 {
-				err := fmt.Errorf("%s is not a valid ConfigMap key: %s", v.Key, strings.Join(errs, ", "))
-				return envVars, &v1.ConfigMap{}, err
-			}
+		key, err := validateKey(v.Key, convert)
+		if err != nil {
+			return envVars, &v1.ConfigMap{}, err
 		}
 
 		data[key] = v.Value
@@ -173,4 +162,67 @@ func (vars Vars) toConfigMap(name string, namespace string, convert bool) ([]v1.
 	}
 
 	return envVars, configMap, nil
+}
+
+func (vars Vars) toSecret(name string, namespace string, convert bool) ([]v1.EnvVar, *v1.Secret, error) {
+	envVars := []v1.EnvVar{}
+	data := make(map[string][]byte)
+
+	for _, v := range vars {
+		key, err := validateKey(v.Key, convert)
+		if err != nil {
+			return envVars, &v1.Secret{}, err
+		}
+
+		encodedValue := base64.StdEncoding.EncodeToString([]byte(v.Value))
+		data[key] = []byte(encodedValue)
+
+		envVars = append(envVars, v1.EnvVar{
+			Name: v.Key,
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: name,
+					},
+					Key: key,
+				},
+			},
+		})
+	}
+
+	secret := &v1.Secret{
+		TypeMeta: unversioned.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Data: data,
+	}
+
+	return envVars, secret, nil
+}
+
+func validateKey(key string, convert bool) (string, error) {
+	if convert {
+		convertedKey := strings.ToLower(strings.Replace(key, "_", "-", -1))
+
+		errs := validation.IsDNS1123Subdomain(convertedKey)
+		if len(errs) > 0 {
+			err := fmt.Errorf("%s is not a valid ConfigMap key: %s", key, strings.Join(errs, ", "))
+			return "", err
+		}
+
+		return convertedKey, nil
+	}
+
+	errs := validation.IsConfigMapKey(key)
+	if len(errs) > 0 {
+		err := fmt.Errorf("%s is not a valid ConfigMap key: %s", key, strings.Join(errs, ", "))
+		return "", err
+	}
+
+	return key, nil
 }
