@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -93,10 +94,17 @@ func readYAMLVars(filename string) (Vars, error) {
 		return vars, err
 	}
 
-	for k, v := range config {
+	// dirty hack for sorting
+	keys := []string{}
+	for k, _ := range config {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
 		vars = append(vars, Var{
 			Key:   k,
-			Value: v,
+			Value: config[k],
 		})
 	}
 
