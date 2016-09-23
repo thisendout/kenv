@@ -8,19 +8,30 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 )
 
-func TestReadVarsFileKV(t *testing.T) {
+func TestReadVarsFromFiles(t *testing.T) {
 	want := Vars{
 		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
+			Key:   "KVKey1",
+			Value: "KVValue1",
 		},
 		Var{
-			Key:   "key2",
-			Value: "value2",
+			Key:   "kvkey2",
+			Value: "kvvalue2",
+		},
+		Var{
+			Key:   "YAMLKey1",
+			Value: "YAMLValue1",
+		},
+		Var{
+			Key:   "yamlkey2",
+			Value: "yamlvalue2",
 		},
 	}
 
-	vars, err := ReadVarsFile("fixtures/vars.env")
+	vars, err := newVarsFromFiles([]string{
+		"fixtures/vars.env",
+		"fixtures/vars.yaml",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,15 +41,19 @@ func TestReadVarsFileKV(t *testing.T) {
 	}
 }
 
-func TestReadVarsFileYAML(t *testing.T) {
+func TestReadYAMLVars(t *testing.T) {
 	want := Vars{
 		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
+			Key:   "YAMLKey1",
+			Value: "YAMLValue1",
+		},
+		Var{
+			Key:   "yamlkey2",
+			Value: "yamlvalue2",
 		},
 	}
 
-	vars, err := ReadVarsFile("fixtures/vars.yaml")
+	vars, err := readYAMLVars("fixtures/vars.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,37 +63,19 @@ func TestReadVarsFileYAML(t *testing.T) {
 	}
 }
 
-func TestReadKVFile(t *testing.T) {
+func TestReadKVVars(t *testing.T) {
 	want := Vars{
 		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
+			Key:   "KVKey1",
+			Value: "KVValue1",
 		},
 		Var{
-			Key:   "key2",
-			Value: "value2",
+			Key:   "kvkey2",
+			Value: "kvvalue2",
 		},
 	}
 
-	vars, err := ReadKVFile("fixtures/vars.env")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(want, vars) {
-		t.Fatalf("not equal, wanted: %+v, got: %+v", want, vars)
-	}
-}
-
-func TestReadYAMLFile(t *testing.T) {
-	want := Vars{
-		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
-		},
-	}
-
-	vars, err := ReadYAMLFile("fixtures/vars.yaml")
+	vars, err := readKVVars("fixtures/vars.env")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,23 +88,23 @@ func TestReadYAMLFile(t *testing.T) {
 func TestToEnvVar(t *testing.T) {
 	want := []v1.EnvVar{
 		v1.EnvVar{
-			Name:  "KEY1",
-			Value: "VALUE1",
+			Name:  "KVKey1",
+			Value: "KVValue1",
 		},
 		v1.EnvVar{
-			Name:  "key2",
-			Value: "value2",
+			Name:  "kvkey2",
+			Value: "kvvalue2",
 		},
 	}
 
 	v := Vars{
 		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
+			Key:   "KVKey1",
+			Value: "KVValue1",
 		},
 		Var{
-			Key:   "key2",
-			Value: "value2",
+			Key:   "kvkey2",
+			Value: "kvvalue2",
 		},
 	}
 
@@ -121,24 +118,24 @@ func TestToEnvVar(t *testing.T) {
 func TestToConfigMap(t *testing.T) {
 	wantEnvVars := []v1.EnvVar{
 		v1.EnvVar{
-			Name: "KEY1",
+			Name: "KVKey1",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{
 						Name: "foo",
 					},
-					Key: "KEY1",
+					Key: "KVKey1",
 				},
 			},
 		},
 		v1.EnvVar{
-			Name: "key2",
+			Name: "kvkey2",
 			ValueFrom: &v1.EnvVarSource{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{
 						Name: "foo",
 					},
-					Key: "key2",
+					Key: "kvkey2",
 				},
 			},
 		},
@@ -154,19 +151,19 @@ func TestToConfigMap(t *testing.T) {
 			Namespace: "bar",
 		},
 		Data: map[string]string{
-			"KEY1": "VALUE1",
-			"key2": "value2",
+			"KVKey1": "KVValue1",
+			"kvkey2": "kvvalue2",
 		},
 	}
 
 	v := Vars{
 		Var{
-			Key:   "KEY1",
-			Value: "VALUE1",
+			Key:   "KVKey1",
+			Value: "KVValue1",
 		},
 		Var{
-			Key:   "key2",
-			Value: "value2",
+			Key:   "kvkey2",
+			Value: "kvvalue2",
 		},
 	}
 

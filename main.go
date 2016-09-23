@@ -80,16 +80,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	vars := Vars{}
-
-	// read in vars files
-	for _, filename := range varsFiles {
-		v, err := ReadVarsFile(filename)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		vars = append(vars, v...)
+	vars, err := newVarsFromFiles(varsFiles)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	var envVars []v1.EnvVar
