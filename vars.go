@@ -21,18 +21,33 @@ type Var struct {
 // Vars is a Var slice
 type Vars []Var
 
-// ReadVarsFile determines the filetype and
-// reads the contents into Vars
-func ReadVarsFile(filename string) (Vars, error) {
-	if path.Ext(filename) == ".yml" || path.Ext(filename) == ".yaml" {
-		return ReadYAMLFile(filename)
+// NewVarsFromFiles takes a slice of files and returns a Vars struct
+func newVarsFromFiles(files []string) (Vars, error) {
+	vars := Vars{}
+
+	// read in vars files
+	for _, filename := range files {
+		var v Vars
+		var err error
+
+		if path.Ext(filename) == ".yml" || path.Ext(filename) == ".yaml" {
+			v, err = readYAMLVars(filename)
+		} else {
+			v, err = readKVVars(filename)
+		}
+
+		if err != nil {
+			return vars, err
+		}
+
+		vars = append(vars, v...)
 	}
 
-	return ReadKVFile(filename)
+	return vars, nil
 }
 
-// ReadKVFile reads files in "key=value" format and returns Vars
-func ReadKVFile(filename string) (Vars, error) {
+// readKVVars reads files in "key=value" format and returns Vars
+func readKVVars(filename string) (Vars, error) {
 	vars := Vars{}
 
 	data, err := ioutil.ReadFile(filename)
@@ -62,8 +77,8 @@ func ReadKVFile(filename string) (Vars, error) {
 	return vars, nil
 }
 
-// ReadYAMLFile reads files in "key: value" format and returns Vars
-func ReadYAMLFile(filename string) (Vars, error) {
+// readYAMLVars reads files in "key: value" format and returns Vars
+func readYAMLVars(filename string) (Vars, error) {
 	vars := Vars{}
 
 	data, err := ioutil.ReadFile(filename)
