@@ -38,7 +38,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, `Examples:
 
   kenv -v fixtures/vars.env fixtures/deployment.yaml
-  kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
+  kenv -name nginx -v fixtures/vars.env -s fixtures/secrets.yml fixtures/deployment.yaml
   cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
 
 Options:

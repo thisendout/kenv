@@ -6,13 +6,13 @@ Environment file injector for Kubernetes Resources
 
 kenv injects variables into Kubernetes resource documents by loading a list of files containing variables and modifying the resource document to include those values. This way, you can dynamically set environment variables without having to template your resource documents.
 
+![kenv Example](example.gif)
+
 kenv supports referencing environment variables as:
 
 * Environment K/V Pairs (plaintext)
 * [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/)
 * [Secrets](http://kubernetes.io/docs/user-guide/secrets/)
-
-![kenv Example](example.gif)
 
 ## Getting Started
 
@@ -39,7 +39,7 @@ Usage: kenv [options] file
 Examples:
 
   kenv -v fixtures/vars.env fixtures/deployment.yaml
-  kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
+  kenv -name nginx -v fixtures/vars.env -s fixtures/secrets.yml fixtures/deployment.yaml
   cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
 
 Options:
@@ -89,6 +89,10 @@ key1=value1
 key2=value2
 ```
 
+### Injection
+
+Variables are injected into the resource doc specified by the user as either plaintext environment variables, [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/), or [Secrets](http://kubernetes.io/docs/user-guide/secrets/). When specifying ConfigMaps and/or Secrets, you must also set a `-name` for the ConfigMap/Secret resource being created.
+
 ### Conversion and Support for K8S < 1.4
 
 When using ConfigMap and/or Secret resources in Kubernetes version < 1.4, keys must adhere to the following regex:
@@ -98,10 +102,6 @@ When using ConfigMap and/or Secret resources in Kubernetes version < 1.4, keys m
 ```
 
 As a convenience, you can pass `-convert-keys`, which will replace underscores with dashes and convert uppercase strings to lower.
-
-### Injection
-
-Variables are injected into the resource doc specified by the user as either plaintext environment variables, [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/), or [Secrets](http://kubernetes.io/docs/user-guide/secrets/). When specifying ConfigMaps and/or Secrets, you must also set a `-name` for the ConfigMap/Secret resource being created.
 
 ## Examples
 
