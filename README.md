@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/thisendout/kenv.svg?branch=master)](https://travis-ci.org/thisendout/kenv)
 
-Environment file injector for Kubernetes Resources
+kenv is an environment file injector for Kubernetes resources.
 
 kenv injects variables into Kubernetes resource documents by loading a list of files containing variables and modifying the resource document to include those values. This way, you can dynamically set environment variables without having to template your resource documents.
 
