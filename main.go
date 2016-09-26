@@ -39,7 +39,7 @@ func init() {
 Examples:
 
   kenv -v fixtures/vars.env fixtures/deployment.yaml
-	kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
+  kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
   cat fixtures/deployment.yaml | kenv -v fixtures/vars.env
 
 Options:
