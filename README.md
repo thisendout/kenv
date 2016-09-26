@@ -93,6 +93,13 @@ key2=value2
 
 Variables are injected into the resource doc specified by the user as either plaintext environment variables, [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/), or [Secrets](http://kubernetes.io/docs/user-guide/secrets/). When specifying ConfigMaps and/or Secrets, you must also set a `-name` for the ConfigMap/Secret resource being created.
 
+kenv injects the variables into the PodSpec for the following resources:
+
+ * `DaemonSet`
+ * `Deployment`
+ * `ReplicaSet`
+ * `ReplicationController`
+
 ### Conversion and Support for K8S < 1.4
 
 When using ConfigMap and/or Secret resources in Kubernetes version < 1.4, keys must adhere to the following regex:
