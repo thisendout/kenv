@@ -19,6 +19,7 @@ var (
 	configMapName string
 	namespace     string
 	convertKeys   bool
+	toYAML        bool
 	flagSet       *flag.FlagSet
 )
 
@@ -29,6 +30,7 @@ func init() {
 	flagSet.StringVar(&secretName, "secret-name", "", "Name to give the Secret resource")
 	flagSet.StringVar(&namespace, "namespace", "default", "Namespace to create the ConfigMap in")
 	flagSet.BoolVar(&convertKeys, "convert-keys", false, "Convert ConfigMap keys to support k8s version < 1.4")
+	flagSet.BoolVar(&toYAML, "yaml", false, "Output as YAML")
 	flagSet.Var(&varsFiles, "v", "File containing environment variables (repeatable)")
 	flagSet.Var(&secretFiles, "s", "File containing secret environment variables (repeatable)")
 	flagSet.Usage = func() {
@@ -106,7 +108,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if err = printJSON(secret); err != nil {
+		if err = printResource(secret, toYAML); err != nil {
 			log.Fatal(err)
 		}
 
@@ -119,7 +121,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if err = printJSON(configMap); err != nil {
+		if err = printResource(configMap, toYAML); err != nil {
 			log.Fatal(err)
 		}
 
@@ -132,7 +134,7 @@ func main() {
 	// inject environment variables into the supplied resource doc
 	// and print the result to STDOUT
 	object, err := InjectVars(data, envVars)
-	if err = printJSON(object); err != nil {
+	if err = printResource(object, toYAML); err != nil {
 		log.Fatal(err)
 	}
 }

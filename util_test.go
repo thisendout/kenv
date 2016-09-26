@@ -6,8 +6,12 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 )
 
-func TestPrintJSON(t *testing.T) {
-	if err := printJSON(v1beta1.Deployment{}); err != nil {
+func TestPrintResource(t *testing.T) {
+	if err := printResource(v1beta1.Deployment{}, false); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := printResource(v1beta1.Deployment{}, true); err != nil {
 		t.Fatal(err)
 	}
 }
