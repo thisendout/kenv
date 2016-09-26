@@ -10,7 +10,7 @@ kenv injects variables into Kubernetes resource documents by loading a list of f
 
 kenv supports referencing environment variables as:
 
-* Environment K/V Pairs (plaintext)
+* [Plaintext K/V Pairs](http://kubernetes.io/docs/user-guide/configuring-containers/#environment-variables-and-variable-expansion)
 * [ConfigMaps](http://kubernetes.io/docs/user-guide/configmap/)
 * [Secrets](http://kubernetes.io/docs/user-guide/secrets/)
 
