@@ -35,8 +35,7 @@ func init() {
 	flagSet.Var(&configMapFiles, "c", "Files containing variables to inject as ConfigMaps (repeatable)")
 	flagSet.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] file\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, `
-Examples:
+		fmt.Fprintf(os.Stderr, `Examples:
 
   kenv -v fixtures/vars.env fixtures/deployment.yaml
   kenv -v fixtures/vars.env -s fixtures/vars.yaml fixtures/deployment.yaml
