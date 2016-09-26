@@ -10,7 +10,7 @@ kenv injects variables into Kubernetes resource documents by loading a list of f
 
 ## Getting Started
 
-[Download](https://github.com/thisendout/kenv/releases/tag/v0.1.0) kenv and run by passing a resource doc (YAML or JSON) to:
+[Download](https://github.com/thisendout/kenv/releases/tag/v0.2.0) kenv and run by passing a resource doc (YAML or JSON) to:
 
 STDIN:
 
