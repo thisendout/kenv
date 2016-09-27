@@ -3,13 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
 var (
@@ -74,14 +72,7 @@ func main() {
 		defer in.Close()
 	}
 
-	// read in doc
-	data, err := ioutil.ReadAll(in)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// ensure doc is JSON
-	data, err = yaml.ToJSON(data)
+	resources, err := ParseDocs(in)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -148,9 +139,27 @@ func main() {
 
 	// inject environment variables into the supplied resource doc
 	// and print the result to STDOUT
-	object, err := InjectVars(data, envVars)
-	if err = printResource(object, toYAML); err != nil {
-		log.Fatal(err)
+	for _, resource := range resources {
+		var result interface{}
+		switch resource.Kind {
+		case "Deployment":
+			result, err = resource.InjectVarsDeployment(envVars)
+		case "DaemonSet":
+			result, err = resource.InjectVarsDaemonSet(envVars)
+		case "ReplicaSet":
+			result, err = resource.InjectVarsReplicaSet(envVars)
+		case "ReplicationController":
+			result, err = resource.InjectVarsRC(envVars)
+		default:
+			result, err = resource.UnmarshalGeneric()
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err = printResource(result, toYAML); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 

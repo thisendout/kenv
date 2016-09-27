@@ -2,14 +2,38 @@ package main
 
 import (
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
 	"k8s.io/kubernetes/pkg/api/v1"
 )
 
+func TestParseDocs(t *testing.T) {
+	file, err := os.Open("fixtures/deployment-service.yml")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resources) != 2 {
+		t.Fatalf("Resource count is not 2: %+v", resources)
+	}
+}
+
 func TestInjectVarsDeployment(t *testing.T) {
-	data, err := ioutil.ReadFile("fixtures/deployment.json")
+	file, err := os.Open("fixtures/deployment.json")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +49,7 @@ func TestInjectVarsDeployment(t *testing.T) {
 		},
 	}
 
-	deployment, err := injectVarsDeployment(data, envVars)
+	deployment, err := resources[0].InjectVarsDeployment(envVars)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +62,13 @@ func TestInjectVarsDeployment(t *testing.T) {
 }
 
 func TestInjectVarsDaemonSet(t *testing.T) {
-	data, err := ioutil.ReadFile("fixtures/daemonset.json")
+	file, err := os.Open("fixtures/deployment.json")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +84,7 @@ func TestInjectVarsDaemonSet(t *testing.T) {
 		},
 	}
 
-	daemonSet, err := injectVarsDaemonSet(data, envVars)
+	daemonSet, err := resources[0].InjectVarsDaemonSet(envVars)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +97,13 @@ func TestInjectVarsDaemonSet(t *testing.T) {
 }
 
 func TestInjectVarsReplicaSet(t *testing.T) {
-	data, err := ioutil.ReadFile("fixtures/replicaset.json")
+	file, err := os.Open("fixtures/deployment.json")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +119,7 @@ func TestInjectVarsReplicaSet(t *testing.T) {
 		},
 	}
 
-	replicaSet, err := injectVarsReplicaSet(data, envVars)
+	replicaSet, err := resources[0].InjectVarsReplicaSet(envVars)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,8 +131,14 @@ func TestInjectVarsReplicaSet(t *testing.T) {
 	}
 }
 
-func TestInjectVarsReplicationController(t *testing.T) {
-	data, err := ioutil.ReadFile("fixtures/replicationcontroller.json")
+func TestInjectVarsRC(t *testing.T) {
+	file, err := os.Open("fixtures/deployment.json")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +154,7 @@ func TestInjectVarsReplicationController(t *testing.T) {
 		},
 	}
 
-	replicationController, err := injectVarsReplicationController(data, envVars)
+	replicationController, err := resources[0].InjectVarsRC(envVars)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,13 +166,31 @@ func TestInjectVarsReplicationController(t *testing.T) {
 	}
 }
 
-func TestGetDocKind(t *testing.T) {
+func TestUnmarshalGeneric(t *testing.T) {
+	file, err := os.Open("fixtures/deployment.json")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resources, err := ParseDocs(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = resources[0].UnmarshalGeneric()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetResourceKind(t *testing.T) {
 	data, err := ioutil.ReadFile("fixtures/deployment.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	kind, err := getDocKind(data)
+	kind, err := getResourceKind(data)
 	if err != nil {
 		t.Fatal(err)
 	}
