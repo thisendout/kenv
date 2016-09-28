@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -174,8 +173,7 @@ func (vars Vars) toSecret(name string, namespace string, convert bool) ([]v1.Env
 			return envVars, &v1.Secret{}, err
 		}
 
-		encodedValue := base64.StdEncoding.EncodeToString([]byte(v.Value))
-		data[key] = []byte(encodedValue)
+		data[key] = []byte(v.Value)
 
 		envVars = append(envVars, v1.EnvVar{
 			Name: v.Key,
