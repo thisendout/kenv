@@ -163,6 +163,8 @@ func (vars Vars) toConfigMap(name string, namespace string, convert bool) ([]v1.
 	return envVars, configMap, nil
 }
 
+// toSecret converts vars to a Secret resource and creates the proper EnvVar
+// ValuesFrom sources to be passed to the container
 func (vars Vars) toSecret(name string, namespace string, convert bool) ([]v1.EnvVar, *v1.Secret, error) {
 	envVars := []v1.EnvVar{}
 	data := make(map[string][]byte)
@@ -173,6 +175,7 @@ func (vars Vars) toSecret(name string, namespace string, convert bool) ([]v1.Env
 			return envVars, &v1.Secret{}, err
 		}
 
+		// the k8s lib will handle the base64 encoding for us
 		data[key] = []byte(v.Value)
 
 		envVars = append(envVars, v1.EnvVar{

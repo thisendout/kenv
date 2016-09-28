@@ -233,8 +233,6 @@ kind: Deployment
 ... snip ...
 ```
 
-NOTE: Environment variables injected as from a secret must be decoded as base64 before use.
-
 ### Plaintext, ConfigMaps, and Secrets
 
 Combining the examples above into one command, you would get the following output:
