@@ -16,7 +16,7 @@ kenv supports referencing environment variables as:
 
 ## Getting Started
 
-[Download](https://github.com/thisendout/kenv/releases/tag/v0.2.0) kenv and run by passing a resource doc (YAML or JSON) to:
+[Download](https://github.com/thisendout/kenv/releases/tag/v0.3.0) kenv and run by passing a resource doc (YAML or JSON) to:
 
 STDIN:
 
