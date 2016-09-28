@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"reflect"
 	"testing"
 
@@ -218,8 +217,8 @@ func TestToSecret(t *testing.T) {
 			Namespace: "bar",
 		},
 		Data: map[string][]byte{
-			"KVKey1": []byte(base64.StdEncoding.EncodeToString([]byte("KVValue1"))),
-			"kvkey2": []byte(base64.StdEncoding.EncodeToString([]byte("kvvalue2"))),
+			"KVKey1": []byte("KVValue1"),
+			"kvkey2": []byte("kvvalue2"),
 		},
 	}
 
