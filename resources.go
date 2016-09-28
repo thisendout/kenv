@@ -2,39 +2,56 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"io"
 
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
-func InjectVars(data []byte, envVars []v1.EnvVar) (runtime.Object, error) {
-	kind, err := getDocKind(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	switch kind {
-	case "Deployment":
-		return injectVarsDeployment(data, envVars)
-	case "DaemonSet":
-		return injectVarsDaemonSet(data, envVars)
-	case "ReplicaSet":
-		return injectVarsReplicaSet(data, envVars)
-	case "ReplicationController":
-		return injectVarsReplicationController(data, envVars)
-	default:
-		return &v1beta1.Deployment{}, fmt.Errorf("Kind %s not supported\n", kind)
-	}
+// KubeResource represents a resource kind and raw data to be used
+// later for injecting EnvVars
+type KubeResource struct {
+	Kind string
+	Data []byte
 }
 
-// injectVarsDeployment inserts EnvVars into a deployment doc
-func injectVarsDeployment(data []byte, envVars []v1.EnvVar) (*v1beta1.Deployment, error) {
+// ParseDocs iterates through YAML or JSON docs and discovers
+// their type returning a list of KubeResources
+func ParseDocs(reader io.Reader) ([]KubeResource, error) {
+	resources := []KubeResource{}
+	decoder := yaml.NewYAMLOrJSONDecoder(reader, 4096)
+
+	for {
+		rawExtension := runtime.RawExtension{}
+		err := decoder.Decode(&rawExtension)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return resources, err
+		}
+
+		kind, err := getResourceKind(rawExtension.Raw)
+		if err != nil {
+			return resources, err
+		}
+
+		resources = append(resources, KubeResource{
+			Kind: kind,
+			Data: rawExtension.Raw,
+		})
+	}
+
+	return resources, nil
+}
+
+// InjectVarsDeployment inserts EnvVars into a Deployment doc
+func (k *KubeResource) InjectVarsDeployment(envVars []v1.EnvVar) (*v1beta1.Deployment, error) {
 	deployment := &v1beta1.Deployment{}
-	if err := json.Unmarshal(data, deployment); err != nil {
+
+	if err := json.Unmarshal(k.Data, &deployment); err != nil {
 		return deployment, err
 	}
 
@@ -42,16 +59,15 @@ func injectVarsDeployment(data []byte, envVars []v1.EnvVar) (*v1beta1.Deployment
 		deployment.Spec.Template.Spec,
 		envVars,
 	)
-
 	deployment.Spec.Template.Spec = podSpec
 	return deployment, nil
 }
 
-// injectVarsDaemonSet inserts EnvVars into a daemonSet doc
-func injectVarsDaemonSet(data []byte, envVars []v1.EnvVar) (*v1beta1.DaemonSet, error) {
+// InjectVarsDaemonSet inserts EnvVars into a daemonSet doc
+func (k *KubeResource) InjectVarsDaemonSet(envVars []v1.EnvVar) (*v1beta1.DaemonSet, error) {
 	daemonSet := &v1beta1.DaemonSet{}
 
-	if err := json.Unmarshal(data, daemonSet); err != nil {
+	if err := json.Unmarshal(k.Data, daemonSet); err != nil {
 		return daemonSet, err
 	}
 
@@ -63,10 +79,10 @@ func injectVarsDaemonSet(data []byte, envVars []v1.EnvVar) (*v1beta1.DaemonSet, 
 	return daemonSet, nil
 }
 
-// injectVarsReplicaSet inserts EnvVars into a replicaSet doc
-func injectVarsReplicaSet(data []byte, envVars []v1.EnvVar) (*v1beta1.ReplicaSet, error) {
+// InjectVarsReplicaSet inserts EnvVars into a replicaSet doc
+func (k *KubeResource) InjectVarsReplicaSet(envVars []v1.EnvVar) (*v1beta1.ReplicaSet, error) {
 	replicaSet := &v1beta1.ReplicaSet{}
-	if err := json.Unmarshal(data, replicaSet); err != nil {
+	if err := json.Unmarshal(k.Data, replicaSet); err != nil {
 		return replicaSet, err
 	}
 
@@ -79,10 +95,10 @@ func injectVarsReplicaSet(data []byte, envVars []v1.EnvVar) (*v1beta1.ReplicaSet
 	return replicaSet, nil
 }
 
-// injectVarsReplicationController inserts EnvVars into a replicationController doc
-func injectVarsReplicationController(data []byte, envVars []v1.EnvVar) (*v1.ReplicationController, error) {
+// InjectVarsReplicationController inserts EnvVars into a replicationController doc
+func (k *KubeResource) InjectVarsRC(envVars []v1.EnvVar) (*v1.ReplicationController, error) {
 	replicationController := &v1.ReplicationController{}
-	if err := json.Unmarshal(data, replicationController); err != nil {
+	if err := json.Unmarshal(k.Data, replicationController); err != nil {
 		return replicationController, err
 	}
 
@@ -95,8 +111,19 @@ func injectVarsReplicationController(data []byte, envVars []v1.EnvVar) (*v1.Repl
 	return replicationController, nil
 }
 
-// getDocKind unmarshalls a file and returns the kind of resource doc
-func getDocKind(data []byte) (string, error) {
+// UnmarshalGeneric does not attempt to unmarshal to a known type,
+// instead returns a generic interface object for displaying to the user
+func (k *KubeResource) UnmarshalGeneric() (interface{}, error) {
+	var generic interface{}
+	if err := json.Unmarshal(k.Data, &generic); err != nil {
+		return generic, err
+	}
+
+	return generic, nil
+}
+
+// getResourceKind unmarshalls a file and returns the kind of resource doc
+func getResourceKind(data []byte) (string, error) {
 	typeMeta := unversioned.TypeMeta{}
 	if err := json.Unmarshal(data, &typeMeta); err != nil {
 		return "", err

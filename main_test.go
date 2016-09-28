@@ -11,7 +11,7 @@ func TestMainWithYAML(t *testing.T) {
 		"kenv",
 		"-v",
 		"fixtures/vars.env",
-		"fixtures/deployment.yaml",
+		"fixtures/deployment.yml",
 	}
 
 	main()
