@@ -95,7 +95,7 @@ func (k *KubeResource) InjectVarsReplicaSet(envVars []v1.EnvVar) (*v1beta1.Repli
 	return replicaSet, nil
 }
 
-// InjectVarsReplicationController inserts EnvVars into a replicationController doc
+// InjectVarsRC inserts EnvVars into a replicationController doc
 func (k *KubeResource) InjectVarsRC(envVars []v1.EnvVar) (*v1.ReplicationController, error) {
 	replicationController := &v1.ReplicationController{}
 	if err := json.Unmarshal(k.Data, replicationController); err != nil {
