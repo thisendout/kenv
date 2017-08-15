@@ -219,7 +219,7 @@ kind: Deployment
     spec:
       containers:
       - env:
-				- name: secretkey1
+        - name: secretkey1
           valueFrom:
             secretKeyRef:
               key: secretkey1
